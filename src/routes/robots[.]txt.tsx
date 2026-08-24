@@ -1,22 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { resolverContextoPorHost } from '#/application/tenant/resolver-contexto-host'
 import type { ContextoHost } from '#/application/tenant/resolver-contexto-host'
-import { tenantRepository } from '#/infrastructure/supabase/tenant-repository'
-
-const APEX_DOMAIN = process.env.COMANDAGO_APEX_DOMAIN ?? 'comandago.app.br'
+import { resolverHostContextoDeHeader } from '#/infrastructure/hostname/resolver-host-context'
 
 export const Route = createFileRoute('/robots.txt')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const hostHeader = request.headers.get('host') ?? ''
-        const hostname = hostHeader.split(':')[0]?.toLowerCase() ?? ''
-
-        const hostContext: ContextoHost =
-          hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.vercel.app')
-            ? { modo: 'landing' }
-            : await resolverContextoPorHost(hostHeader, APEX_DOMAIN, tenantRepository)
+        const hostContext = await resolverHostContextoDeHeader(request.headers.get('host') ?? '')
 
         return new Response(gerarRobotsTxt(hostContext, new URL(request.url).origin), {
           headers: { 'content-type': 'text/plain; charset=utf-8' },

@@ -121,6 +121,58 @@ aberta com `window.open('', '_blank')` já no clique síncrono do botão (antes
 do `await` da chamada ao banco) e só recebe a URL depois — é o que evita cair
 no bloqueio de popup do navegador para fluxos assíncronos.
 
+## Painel do lojista
+
+Briefing seção 6, item 3 (CRUD de categorias/produtos, upload de foto,
+horários, cores/logo). Vive sob `app.<apex>` (`hostContext.modo === 'painel'`
+— seção "Middleware de hostname" acima), sem cadastro self-service: o
+lojista recebe login (e-mail/senha do Supabase Auth) de Márcio no
+onboarding presencial.
+
+**Sessão via cookies, não localStorage.** `src/infrastructure/supabase/
+auth-server-client.ts` cria um client `@supabase/ssr` ligado aos cookies da
+requisição atual (`getCookie`/`setCookie` de `@tanstack/react-start/server`)
+— usado só dentro de server functions
+(`src/infrastructure/supabase/auth-actions.ts`: `entrarFn`/`sairFn`, e
+`sessao-painel.ts`: `obterSessaoPainelFn`, que resolve usuário + tenant via
+`tenant_usuarios`). `src/infrastructure/supabase/auth-browser-client.ts`
+(`@supabase/ssr`'s `createBrowserClient`) lê a mesma sessão via
+`document.cookie` no browser — é o client usado por todo repositório de
+escrita do painel (`*-repository-painel.ts`), nunca o anônimo
+(`client.ts`) usado pelo cardápio público.
+
+**CSRF:** `src/start.ts` registra `createCsrfMiddleware()` (padrão
+same-origin), filtrado só pra chamadas de server function
+(`handlerType === 'serverFn'`) — sem esse filtro, toda navegação normal
+(GET de "/", robots.txt etc.) seria rejeitada, já que não carrega
+Sec-Fetch-Site "same-origin" nem Referer.
+
+**Bug real encontrado ao testar:** `router.invalidate()` (usado depois do
+login/logout pra re-resolver a sessão sem recarregar a página) força uma
+re-execução client-side do `beforeLoad` da rota raiz — e
+`getGlobalStartContext()` só resolve durante o SSR do carregamento inicial,
+vindo `undefined` nesse caso. Sem tratar isso, todo re-invalidate caía
+silenciosamente em `hostContext = { modo: 'landing' }`, escondendo o painel
+logo depois do login. Corrigido com um fallback via server function
+(`src/infrastructure/hostname/resolver-host-context-fn.ts`), que resolve o
+host de novo a partir da requisição atual quando o contexto global não
+está disponível.
+
+**Proteção de rota:** cada rota do painel (`/categorias`, `/produtos`,
+`/horarios`, `/aparencia`) chama `exigirSessaoPainel()`
+(`src/presentation/painel/proteger-rota-painel.ts`) no loader, que
+redireciona pra "/" (mostra o login) se não houver sessão válida.
+
+**CRUD e upload:** categorias/produtos (`categoria-repository-painel.ts`,
+`produto-repository-painel.ts`) e horários/aparência de tenants
+(`tenant-repository-painel.ts`) são protegidos pelas mesmas RLS policies da
+migration inicial (`*_insert/update/delete_membros`, `tenants_update_owner`)
+— a UI não duplica essa checagem, só trata o erro se vier. Fotos de
+produto/logo sobem pro bucket público `lojas` (migration
+[`20260824140000_storage_lojas.sql`](./supabase/migrations/20260824140000_storage_lojas.sql)),
+sob `{tenant_id}/...` — a policy de Storage usa esse primeiro segmento do
+path com `is_tenant_member()`, mesmo padrão das tabelas.
+
 # Getting Started
 
 To run this application:

@@ -1,22 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { resolverContextoPorHost } from '#/application/tenant/resolver-contexto-host'
-import type { ContextoHost } from '#/application/tenant/resolver-contexto-host'
-import { tenantRepository } from '#/infrastructure/supabase/tenant-repository'
-
-const APEX_DOMAIN = process.env.COMANDAGO_APEX_DOMAIN ?? 'comandago.app.br'
+import { resolverHostContextoDeHeader } from '#/infrastructure/hostname/resolver-host-context'
 
 export const Route = createFileRoute('/sitemap.xml')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const hostHeader = request.headers.get('host') ?? ''
-        const hostname = hostHeader.split(':')[0]?.toLowerCase() ?? ''
-
-        const hostContext: ContextoHost =
-          hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.vercel.app')
-            ? { modo: 'landing' }
-            : await resolverContextoPorHost(hostHeader, APEX_DOMAIN, tenantRepository)
+        const hostContext = await resolverHostContextoDeHeader(request.headers.get('host') ?? '')
 
         // Só a loja pública tem sitemap — cardápio ainda é uma página única
         // (categorias/produtos não têm URL própria nesta sessão), então o

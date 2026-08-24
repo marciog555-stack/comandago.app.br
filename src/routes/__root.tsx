@@ -5,14 +5,15 @@ import { getGlobalStartContext } from '@tanstack/react-start'
 
 import appCss from '../styles.css?url'
 import type { ContextoHost } from '#/application/tenant/resolver-contexto-host'
+import { resolverHostContextoFn } from '#/infrastructure/hostname/resolver-host-context-fn'
 
 export const Route = createRootRoute({
-  beforeLoad: () => {
-    // getGlobalStartContext() só resolve no servidor (undefined no client).
-    // A hidratação inicial reaproveita o resultado do SSR sem re-rodar este
-    // beforeLoad; ele só re-executaria no client numa navegação client-side
-    // futura — como hoje só existe a rota "/", isso ainda não é alcançável.
-    // Falha segura enquanto isso: cai em "landing".
+  beforeLoad: async () => {
+    // getGlobalStartContext() só resolve no SSR do carregamento inicial
+    // (undefined numa re-execução client-side deste beforeLoad, como a que
+    // router.invalidate() dispara depois do login). Nesse caso, pede pro
+    // servidor resolver de novo via RPC (resolverHostContextoFn) — ele
+    // enxerga o Host de verdade da requisição atual.
     //
     // O cast abaixo é necessário porque a tipagem genérica de
     // getGlobalStartContext() só liga corretamente ao Register quando
@@ -25,7 +26,7 @@ export const Route = createRootRoute({
     // hostnameMiddleware (src/infrastructure/hostname), a única coisa que
     // escreve nesse contexto global.
     const resolvido = getGlobalStartContext() as { hostContext?: ContextoHost } | undefined
-    const hostContext: ContextoHost = resolvido?.hostContext ?? { modo: 'landing' }
+    const hostContext: ContextoHost = resolvido?.hostContext ?? (await resolverHostContextoFn())
     return { hostContext }
   },
   head: () => ({

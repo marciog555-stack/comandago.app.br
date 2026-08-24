@@ -6,7 +6,11 @@ import type { ContextoHost } from '#/application/tenant/resolver-contexto-host'
 import { calcularStatusLoja } from '#/domain/tenant/status-loja'
 import { categoriaRepository } from '#/infrastructure/supabase/categoria-repository'
 import { produtoRepository } from '#/infrastructure/supabase/produto-repository'
+import { obterSessaoPainelFn } from '#/infrastructure/supabase/sessao-painel'
+import type { SessaoPainel } from '#/infrastructure/supabase/sessao-painel'
 import { CardapioPublico } from '#/presentation/components/cardapio/cardapio-publico'
+import { LoginForm } from '#/presentation/components/painel/login-form'
+import { PainelLayout } from '#/presentation/components/painel/painel-layout'
 import { gerarJsonLdRestaurante } from '#/presentation/seo/json-ld-restaurante'
 
 export const Route = createFileRoute('/')({
@@ -19,10 +23,15 @@ export const Route = createFileRoute('/')({
         categoriaRepository,
         produtoRepository,
       )
-      return { hostContext, categorias }
+      return { hostContext, categorias, sessao: null }
     }
 
-    return { hostContext, categorias: [] as Array<CategoriaComProdutos> }
+    if (hostContext.modo === 'painel') {
+      const sessao = await obterSessaoPainelFn()
+      return { hostContext, categorias: [] as Array<CategoriaComProdutos>, sessao }
+    }
+
+    return { hostContext, categorias: [] as Array<CategoriaComProdutos>, sessao: null }
   },
   head: ({ match }) => {
     const { hostContext, categorias } = match.loaderData ?? {
@@ -61,7 +70,7 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  const { hostContext, categorias } = Route.useLoaderData()
+  const { hostContext, categorias, sessao } = Route.useLoaderData()
 
   if (hostContext.modo === 'loja' || hostContext.modo === 'dominio_custom') {
     return (
@@ -73,6 +82,10 @@ function Home() {
     )
   }
 
+  if (hostContext.modo === 'painel') {
+    return sessao ? <PainelHome sessao={sessao} /> : <LoginForm />
+  }
+
   return (
     <div className="p-8">
       <h1 className="text-4xl font-bold">ComandaGO</h1>
@@ -82,12 +95,21 @@ function Home() {
   )
 }
 
+function PainelHome({ sessao }: { sessao: SessaoPainel }) {
+  return (
+    <PainelLayout sessao={sessao}>
+      <h1 className="text-xl font-bold">Bem-vindo(a), {sessao.tenantNome}</h1>
+      <p className="mt-2 text-neutral-600">
+        Use o menu acima pra gerenciar categorias, produtos, horários e aparência da sua loja.
+      </p>
+    </PainelLayout>
+  )
+}
+
 function descreverModo(hostContext: ContextoHost): string {
   switch (hostContext.modo) {
     case 'landing':
       return 'Host resolvido: landing de vendas.'
-    case 'painel':
-      return 'Host resolvido: painel do lojista.'
     case 'loja_nao_encontrada':
       return 'Host resolvido: subdomínio sem loja correspondente.'
     case 'nao_encontrado':
