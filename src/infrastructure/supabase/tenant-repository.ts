@@ -16,6 +16,7 @@ interface LinhaVitrine {
   slug: string
   custom_domain: string | null
   nome: string
+  cidade: string
   logo_url: string | null
   cor_primaria: string | null
   cor_fundo: string | null
@@ -33,6 +34,7 @@ function mapearPublico(linha: LinhaVitrine): TenantPublico {
     slug: linha.slug,
     customDomain: linha.custom_domain,
     nome: linha.nome,
+    cidade: linha.cidade,
     logoUrl: linha.logo_url,
     corPrimaria: linha.cor_primaria,
     corFundo: linha.cor_fundo,

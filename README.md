@@ -58,9 +58,28 @@ e resolve o tenant correspondente via `tenants_publico()`
 `localhost` e `*.vercel.app` caem direto em `landing` (sem round-trip no
 Supabase) — ainda não há domínio real apontado. O resultado fica disponível
 em `Route.useRouteContext().hostContext` em qualquer rota, via
-`beforeLoad` da rota raiz (`src/routes/__root.tsx`). `src/routes/index.tsx`
-só imprime qual modo foi resolvido — as telas de verdade (landing, painel,
-cardápio) ainda não existem.
+`beforeLoad` da rota raiz (`src/routes/__root.tsx`).
+
+## Cardápio público (SSR)
+
+Quando `hostContext.modo` é `loja` ou `dominio_custom`, `src/routes/index.tsx`
+renderiza o cardápio de verdade (`src/presentation/components/cardapio/`):
+categorias ativas com produtos ativos (`src/application/cardapio/buscar-cardapio-publico.ts`),
+tema aplicado via CSS variables (`--cor-primaria`/`--cor-fundo` do tenant) e
+status aberto/fechado calculado a partir de `tenants.horarios`
+(`src/domain/tenant/status-loja.ts`, fuso `America/Sao_Paulo`, suporta
+horário que cruza a meia-noite).
+
+SEO por loja (seção 5 do briefing): título/description/Open Graph dinâmicos e
+JSON-LD `Restaurant`+`Menu` (schema.org) no `head()` da rota, H1 com nome +
+cidade, `alt` descritivo em toda imagem. `/robots.txt` e `/sitemap.xml`
+(`src/routes/robots[.]txt.tsx`, `src/routes/sitemap[.]xml.tsx`) respondem por
+subdomínio: loja pública libera indexação e anuncia o sitemap, painel do
+lojista bloqueia (`Disallow: /`). O sitemap por ora só lista a home — cresce
+quando existirem rotas por produto/categoria.
+
+Landing de vendas e painel do lojista continuam sem tela (só o texto de
+diagnóstico do modo resolvido) — são os próximos passos do roadmap.
 
 # Getting Started
 

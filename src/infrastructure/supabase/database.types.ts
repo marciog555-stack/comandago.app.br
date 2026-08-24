@@ -226,6 +226,7 @@ export type Database = {
       tenants: {
         Row: {
           ativo: boolean
+          cidade: string
           cor_fundo: string | null
           cor_primaria: string | null
           criado_em: string
@@ -243,6 +244,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          cidade?: string
           cor_fundo?: string | null
           cor_primaria?: string | null
           criado_em?: string
@@ -260,6 +262,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          cidade?: string
           cor_fundo?: string | null
           cor_primaria?: string | null
           criado_em?: string
@@ -293,6 +296,7 @@ export type Database = {
         Args: never
         Returns: {
           ativo: boolean
+          cidade: string
           cor_fundo: string
           cor_primaria: string
           custom_domain: string

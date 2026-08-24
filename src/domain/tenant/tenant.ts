@@ -14,6 +14,7 @@ export interface Tenant {
   slug: string
   customDomain: string | null
   nome: string
+  cidade: string
   logoUrl: string | null
   corPrimaria: string | null
   corFundo: string | null
