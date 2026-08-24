@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 
 import { buscarCardapioPublico } from '#/application/cardapio/buscar-cardapio-publico'
@@ -9,10 +10,16 @@ import { produtoRepository } from '#/infrastructure/supabase/produto-repository'
 import { obterSessaoPainelFn } from '#/infrastructure/supabase/sessao-painel'
 import type { SessaoPainel } from '#/infrastructure/supabase/sessao-painel'
 import { CardapioPublico } from '#/presentation/components/cardapio/cardapio-publico'
-import { ComandaGoLanding } from '#/presentation/components/landing/comandago-landing'
 import { LoginForm } from '#/presentation/components/painel/login-form'
 import { PainelLayout } from '#/presentation/components/painel/painel-layout'
 import { gerarJsonLdRestaurante } from '#/presentation/seo/json-ld-restaurante'
+
+// Lazy: GSAP + Lenis (~70kb gzip) só devem baixar pra quem vê a landing de
+// vendas — cliente final numa loja, ou o lojista no painel, nunca deveria
+// pagar esse peso extra de carregamento.
+const ComandaGoLanding = lazy(() =>
+  import('#/presentation/components/landing/comandago-landing').then((m) => ({ default: m.ComandaGoLanding })),
+)
 
 export const Route = createFileRoute('/')({
   loader: async ({ context }) => {
@@ -101,7 +108,11 @@ function Home() {
   }
 
   if (hostContext.modo === 'landing') {
-    return <ComandaGoLanding />
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#1A1310]" />}>
+        <ComandaGoLanding />
+      </Suspense>
+    )
   }
 
   return (

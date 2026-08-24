@@ -210,6 +210,36 @@ o telefone, sem login, e vê os pontos via RPC `consultar_pontos_fidelidade`
 anônimo, mesmo padrão do cardápio público). Link "Consultar meus pontos de
 fidelidade" no cabeçalho da loja (`loja-header.tsx`).
 
+## Landing de vendas
+
+`src/presentation/components/landing/comandago-landing.tsx`, mostrada em
+`hostContext.modo === 'landing'`. Identidade própria da marca ComandaGO
+(Fraunces + Manrope, paleta carvão/creme/brasa), deliberadamente distinta do
+tema por-loja (`cor_primaria`/`cor_fundo`, que só existe pro cardápio de cada
+tenant).
+
+**Movimento:** GSAP + ScrollTrigger pra entrada do hero e revelações de
+seção, [Lenis](https://github.com/darkroomengineering/lenis) pra rolagem
+suave (`src/presentation/hooks/use-lenis.ts`). Decisões deliberadas:
+
+- Ousadia concentrada na entrada do hero (uma sequência só, ~600ms) — o
+  resto da página só tem revelação curta (opacity+translateY, uma vez,
+  nunca reanima ao rolar pra cima e descer de novo).
+- **Sem** scroll-scrub/parallax contínuo no hero (era o pedido original) —
+  é o primeiro item da lista de antipadrões de movimento em web: pesa a
+  cada quadro e não comunica nada. Trocado por uma entrada única bem
+  orquestrada.
+- Respeita `prefers-reduced-motion` (desliga Lenis e os `gsap.from()`,
+  mantendo o conteúdo já visível em vez de preso num estado inicial
+  invisível).
+- GSAP/Lenis (~70kB gzip) carregam via `React.lazy` só na rota da landing
+  (`src/routes/index.tsx`) — cliente final numa loja ou o lojista no painel
+  nunca baixam esse peso. Confirmado comparando o bundle antes/depois do
+  lazy: o chunk compartilhado de rotas caiu de ~155kB pra ~17kB.
+- Fundo do hero é um tratamento gráfico SVG (motivo de "comanda"/ticket),
+  não foto/vídeo — sem asset real disponível ainda; trocar quando houver
+  fotos de loja de verdade.
+
 # Getting Started
 
 To run this application:
