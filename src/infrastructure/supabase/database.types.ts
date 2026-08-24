@@ -289,6 +289,35 @@ export type Database = {
         Args: { p_telefone: string; p_tenant_id: string }
         Returns: number
       }
+      criar_pedido: {
+        Args: {
+          p_cliente_nome: string
+          p_cliente_telefone: string
+          p_endereco: string
+          p_forma_pagamento: string
+          p_itens: Json
+          p_observacao: string
+          p_tenant_id: string
+          p_tipo: string
+        }
+        Returns: {
+          cliente_nome: string
+          cliente_telefone: string
+          criado_em: string
+          endereco: string | null
+          forma_pagamento: string
+          id: string
+          itens: Json
+          numero: number
+          observacao: string | null
+          status: string
+          subtotal: number
+          taxa_entrega: number
+          tenant_id: string
+          tipo: string
+          total: number
+        }
+      }
       is_tenant_member: { Args: { p_tenant_id: string }; Returns: boolean }
       is_tenant_owner: { Args: { p_tenant_id: string }; Returns: boolean }
       tenant_esta_ativo: { Args: { p_tenant_id: string }; Returns: boolean }

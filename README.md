@@ -81,6 +81,46 @@ quando existirem rotas por produto/categoria.
 Landing de vendas e painel do lojista continuam sem tela (só o texto de
 diagnóstico do modo resolvido) — são os próximos passos do roadmap.
 
+## Carrinho + checkout via WhatsApp
+
+Briefing seção 6, item 2. O carrinho vive só no `localStorage` do browser
+(`src/presentation/hooks/use-carrinho.ts`) — sem cliente com login, não há
+onde mais guardar. Cada subdomínio de loja já é uma origem separada, então o
+localStorage naturalmente isola o carrinho de uma loja do de outra.
+
+Risco de segurança que este passo resolveu: até aqui, a tabela `pedidos`
+tinha uma policy que deixava o cliente anônimo inserir uma linha direto via
+PostgREST com qualquer preço/subtotal/total que quisesse (bastava adulterar
+o payload no DevTools). A migration
+[`20260824130000_criar_pedido.sql`](./supabase/migrations/20260824130000_criar_pedido.sql)
+remove essa policy e cria `criar_pedido(...)`, uma function `SECURITY
+DEFINER` que é a ÚNICA porta de entrada: o cliente manda só
+`produtoId + quantidade` por item (nunca preço), e o banco recalcula
+subtotal/taxa de entrega/total a partir do cardápio real (`produtos`,
+`tenants`) dentro da própria function. Testado explicitamente contra:
+preço adulterado (ignorado, sempre recalculado), produto de outro tenant
+(rejeitado — a FK/where já garante isolamento), produto inativo
+(rejeitado), tenant inativo (rejeitado), pedido abaixo do mínimo
+(rejeitado) e insert direto na tabela pelo jeito antigo (bloqueado pela RLS
+depois da policy removida).
+
+Fluxo: `ProdutoCard` tem botão de adicionar
+(`src/presentation/components/cardapio/produto-card.tsx`) → `BarraCarrinho`
+flutuante mostra quantidade/subtotal
+(`src/presentation/components/carrinho/barra-carrinho.tsx`) → modal
+`CarrinhoCheckout` edita itens e coleta nome/telefone/tipo
+(entrega/retirada)/endereço/forma de pagamento
+(`src/presentation/components/carrinho/carrinho-checkout.tsx`). No submit,
+`criarPedido` (`src/application/pedido/criar-pedido.ts`) valida no cliente
+(`src/domain/carrinho/validar-checkout.ts`, só UX — a defesa de verdade é a
+function no banco) e chama `pedidoRepository.criar`
+(`src/infrastructure/supabase/pedido-repository.ts`), que envia a RPC. A
+mensagem do WhatsApp é montada a partir do pedido confirmado pelo banco
+(`src/domain/carrinho/mensagem-whatsapp.ts`) e aberta via `wa.me`. A aba é
+aberta com `window.open('', '_blank')` já no clique síncrono do botão (antes
+do `await` da chamada ao banco) e só recebe a URL depois — é o que evita cair
+no bloqueio de popup do navegador para fluxos assíncronos.
+
 # Getting Started
 
 To run this application:
