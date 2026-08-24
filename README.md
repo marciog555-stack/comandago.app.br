@@ -218,17 +218,36 @@ fidelidade" no cabeçalho da loja (`loja-header.tsx`).
 tema por-loja (`cor_primaria`/`cor_fundo`, que só existe pro cardápio de cada
 tenant).
 
-**Movimento:** GSAP + ScrollTrigger pra entrada do hero e revelações de
-seção, [Lenis](https://github.com/darkroomengineering/lenis) pra rolagem
-suave (`src/presentation/hooks/use-lenis.ts`). Decisões deliberadas:
+**Movimento:** GSAP + ScrollTrigger pra entrada do hero, o scroll-scrub da
+cena do hero e revelações de seção, [Lenis](https://github.com/darkroomengineering/lenis)
+pra rolagem suave (`src/presentation/hooks/use-lenis.ts`). Decisões
+deliberadas:
 
 - Ousadia concentrada na entrada do hero (uma sequência só, ~600ms) — o
   resto da página só tem revelação curta (opacity+translateY, uma vez,
   nunca reanima ao rolar pra cima e descer de novo).
-- **Sem** scroll-scrub/parallax contínuo no hero (era o pedido original) —
-  é o primeiro item da lista de antipadrões de movimento em web: pesa a
-  cada quadro e não comunica nada. Trocado por uma entrada única bem
-  orquestrada.
+- O hero (desktop, `md:` pra cima) tem um scroll-scrub controlado: a
+  comanda "se preenche" (linhas de pedido desenhando, ícones de comida
+  entrando, um conector até o selo de "pedido enviado") conforme a fração
+  de scroll, via `ScrollTrigger({ scrub: true })` prendendo a cena com
+  `position: sticky` por uma faixa extra de altura (`md:h-[190vh]` no
+  container). Não é o antipadrão de parallax genérico (ambiente, várias
+  camadas, não comunica nada): é uma cena só, vetor 100% controlado por
+  nós (sem vídeo), inteiramente reversível ao rolar pra cima, e cada
+  quadro nasce direto da posição de scroll — sem seek de `<video>`, sem
+  jank. Desligado no mobile (a cena não cabe ao lado do texto numa tela
+  estreita) e em `prefers-reduced-motion` (nesses casos a cena já nasce
+  montada, no estado final).
+  - Pegadinha de CSS: `position: sticky` quebra se qualquer ancestral tiver
+    `overflow` diferente de `visible` — por isso a `<section>` do hero não
+    tem `overflow-hidden` (cada SVG já se clipa sozinho por padrão).
+  - Pegadinha de SVG: o truque de "desenhar" um traço via
+    `pathLength={1}` + `strokeDashoffset` (1→0) só esconde a linha de
+    verdade quando o `strokeDasharray` é um traço único do tamanho do
+    path inteiro. Num traço pontilhado (`strokeDasharray` com padrão que
+    se repete, como o conector), esconder assim só desloca qual pedaço
+    fica pontilhado — por isso o conector usa fade de opacidade, não
+    desenho de traço.
 - Respeita `prefers-reduced-motion` (desliga Lenis e os `gsap.from()`,
   mantendo o conteúdo já visível em vez de preso num estado inicial
   invisível).
@@ -236,9 +255,11 @@ suave (`src/presentation/hooks/use-lenis.ts`). Decisões deliberadas:
   (`src/routes/index.tsx`) — cliente final numa loja ou o lojista no painel
   nunca baixam esse peso. Confirmado comparando o bundle antes/depois do
   lazy: o chunk compartilhado de rotas caiu de ~155kB pra ~17kB.
-- Fundo do hero é um tratamento gráfico SVG (motivo de "comanda"/ticket),
+- Cena do hero é um tratamento gráfico SVG (motivo de "comanda"/ticket),
   não foto/vídeo — sem asset real disponível ainda; trocar quando houver
-  fotos de loja de verdade.
+  fotos de loja de verdade. O selo de "pedido enviado" é um ícone
+  genérico de balão+check (não reproduz o logo do WhatsApp, por risco de
+  marca).
 
 # Getting Started
 

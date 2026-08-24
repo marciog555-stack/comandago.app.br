@@ -16,17 +16,22 @@ if (typeof window !== 'undefined') {
  *
  * Movimento: ousadia concentrada na entrada do hero (sequência única,
  * ~600ms) — o resto da página só tem revelações curtas de scroll, uma vez
- * só, opacity+translate (nunca width/height/parallax). Deliberadamente SEM
- * scroll-scrub/parallax contínuo no hero: fica pesado, atrapalha leitura e
- * é o primeiro item na lista de antipadrões de movimento em web.
+ * só, opacity+translate (nunca width/height/parallax). O hero em si tem um
+ * scroll-scrub controlado (ver `heroTrackRef`/`HeroComandaAnimada` abaixo):
+ * a diferença pro antipadrão de parallax genérico é que aqui a cena inteira
+ * é vetor que a gente controla, o scrub fica só no hero (não a página
+ * toda) e cada quadro nasce diretamente da fração de scroll via
+ * `ScrollTrigger({ scrub: true })` — sem seek de `<video>`, sem jank.
  */
 export function ComandaGoLanding() {
   useLenis()
   const heroRef = useRef<HTMLDivElement>(null)
+  const heroTrackRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
     const prefereReduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches
     const ctx = gsap.context(() => {
       if (!prefereReduzido && heroRef.current) {
         gsap
@@ -35,6 +40,29 @@ export function ComandaGoLanding() {
           .from('[data-hero-title]', { opacity: 0, y: 22, duration: 0.55 }, '-=0.25')
           .from('[data-hero-sub]', { opacity: 0, y: 16, duration: 0.45 }, '-=0.3')
           .from('[data-hero-cta]', { opacity: 0, y: 12, duration: 0.4 }, '-=0.25')
+      }
+
+      if (!prefereReduzido && isDesktop && heroTrackRef.current) {
+        const track = heroTrackRef.current
+
+        gsap.set('[data-print]', { strokeDasharray: 1, strokeDashoffset: 1 })
+        gsap.set('[data-comanda]', { opacity: 0, y: 40 })
+        gsap.set('[data-icone]', { opacity: 0, scale: 0.6, transformOrigin: '50% 50%' })
+        // Conector: fade em vez de "desenhar" o traço — o dasharray dele é
+        // um padrão pontilhado que se repete (não um traço único), então o
+        // truque de esconder via strokeDashoffset (que funciona nas linhas
+        // [data-print], onde dasharray = comprimento total) só desloca qual
+        // pedaço fica pontilhado, não some com a linha.
+        gsap.set('[data-conector]', { opacity: 0 })
+        gsap.set('[data-selo]', { opacity: 0, scale: 0.4, transformOrigin: '50% 50%' })
+
+        gsap
+          .timeline({ scrollTrigger: { trigger: track, start: 'top top', end: 'bottom bottom', scrub: 0.4 } })
+          .to('[data-comanda]', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' })
+          .to('[data-print]', { strokeDashoffset: 0, stagger: 0.15, duration: 0.6, ease: 'none' }, '-=0.2')
+          .to('[data-icone]', { opacity: 1, scale: 1, stagger: 0.2, duration: 0.5, ease: 'back.out(1.6)' }, '-=0.3')
+          .to('[data-conector]', { opacity: 1, duration: 0.4, ease: 'power1.out' })
+          .to('[data-selo]', { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.8)' }, '-=0.2')
       }
 
       if (!prefereReduzido) {
@@ -100,31 +128,38 @@ export function ComandaGoLanding() {
         </a>
       </header>
 
-      <section ref={heroRef} className="relative overflow-hidden bg-[#1A1310] text-[#FBF4E8]">
-        <HeroGrafico />
-        <div className="relative mx-auto max-w-5xl px-6 py-20 sm:py-28">
-          <p data-hero-kicker className="text-sm font-medium uppercase tracking-[0.2em] text-[#E2572B]">
-            Pra restaurantes de Anápolis-GO
-          </p>
-          <h1
-            data-hero-title
-            className="display-title mt-4 max-w-3xl text-4xl leading-tight font-semibold sm:text-6xl sm:leading-[1.05]"
-          >
-            Seu cardápio, seu WhatsApp, sem comissão por pedido.
-          </h1>
-          <p data-hero-sub className="mt-6 max-w-xl text-lg text-[#FBF4E8]/80">
-            Um site de pedidos com a cara do seu restaurante. O cliente monta o pedido, você recebe pronto no
-            WhatsApp da loja — sem taxa por venda, sem letra miúda.
-          </p>
-          <div data-hero-cta className="mt-9 flex flex-wrap items-center gap-4">
-            <a
-              ref={ctaRef}
-              href="#precos"
-              className="inline-block rounded-full bg-[#E2572B] px-7 py-3 font-semibold text-white no-underline transition-colors hover:bg-[#c94a22] active:scale-95"
-            >
-              Quero minha loja
-            </a>
-            <span className="text-sm text-[#FBF4E8]/60">R$ 100 de implantação + R$ 50/mês</span>
+      {/* Sem overflow-hidden aqui: quebraria o `position: sticky` do scroll-scrub
+          abaixo (ancestral com overflow não-visible vira o container de
+          referência da stickiness). Cada SVG já se clipa sozinho por padrão. */}
+      <section ref={heroRef} className="relative bg-[#1A1310] text-[#FBF4E8]">
+        <div ref={heroTrackRef} className="relative md:h-[190vh]">
+          <div className="sticky top-0 flex min-h-screen flex-col justify-center">
+            <HeroComandaAnimada />
+            <div className="relative mx-auto w-full max-w-5xl px-6 py-20 sm:py-28">
+              <p data-hero-kicker className="text-sm font-medium uppercase tracking-[0.2em] text-[#E2572B]">
+                Pra restaurantes de Anápolis-GO
+              </p>
+              <h1
+                data-hero-title
+                className="display-title mt-4 max-w-xl text-4xl leading-tight font-semibold sm:text-6xl sm:leading-[1.05]"
+              >
+                Seu cardápio, seu WhatsApp, sem comissão por pedido.
+              </h1>
+              <p data-hero-sub className="mt-6 max-w-xl text-lg text-[#FBF4E8]/80">
+                Um site de pedidos com a cara do seu restaurante. O cliente monta o pedido, você recebe pronto no
+                WhatsApp da loja — sem taxa por venda, sem letra miúda.
+              </p>
+              <div data-hero-cta className="mt-9 flex flex-wrap items-center gap-4">
+                <a
+                  ref={ctaRef}
+                  href="#precos"
+                  className="inline-block rounded-full bg-[#E2572B] px-7 py-3 font-semibold text-white no-underline transition-colors hover:bg-[#c94a22] active:scale-95"
+                >
+                  Quero minha loja
+                </a>
+                <span className="text-sm text-[#FBF4E8]/60">R$ 100 de implantação + R$ 50/mês</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -203,52 +238,116 @@ function Recurso({ titulo, descricao }: { titulo: string; descricao: string }) {
 }
 
 /**
- * Fundo do hero: tratamento gráfico (não foto/vídeo — sem asset real
- * disponível ainda) inspirado no motivo de "comanda"/ticket do nome da
- * marca. Estático de propósito (sem gradiente pulsando/blob animado —
- * antipadrão: come bateria à toa) — o movimento da seção inteira já está
- * concentrado na entrada do texto por cima.
+ * Cena do hero: a comanda "se preenche" (linhas de pedido desenhando via
+ * stroke-dashoffset, ícones de comida entrando, um conector pontilhado até
+ * o selo de "pedido enviado") conforme a fração de scroll do hero — dirigido
+ * pelo `ScrollTrigger({ scrub })` no componente pai, não por CSS/self-timer.
+ * No estado de repouso (SSR, JS desligado, `prefers-reduced-motion`, mobile)
+ * todo mundo já nasce no estado final (opacity 1, traço completo): só o
+ * efeito `useEffect` some com esse estado no início e o scrub devolve aos
+ * poucos — igual ao padrão já usado na entrada do texto do hero.
+ *
+ * O selo não reproduz o logo do WhatsApp (risco de marca) — é um ícone de
+ * balão de conversa + check genérico, só a cor de marca remete ao produto.
  */
-function HeroGrafico() {
+function HeroComandaAnimada() {
   return (
     <svg
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 right-0 h-full w-[60%] opacity-40 sm:opacity-60"
-      viewBox="0 0 600 800"
-      preserveAspectRatio="xMaxYMid slice"
+      className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[56%] md:block"
+      viewBox="0 0 640 800"
+      preserveAspectRatio="xMidYMid meet"
     >
       <defs>
         <linearGradient id="brasa" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#E2572B" stopOpacity="0.5" />
+          <stop offset="0%" stopColor="#E2572B" stopOpacity="0.45" />
           <stop offset="100%" stopColor="#1A1310" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect x="180" y="60" width="340" height="680" rx="18" fill="url(#brasa)" transform="rotate(8 350 400)" />
-      <rect
-        x="60"
-        y="140"
-        width="340"
-        height="680"
-        rx="18"
+
+      <rect x="190" y="80" width="340" height="680" rx="18" fill="url(#brasa)" transform="rotate(6 360 420)" />
+
+      <g data-comanda transform="rotate(-4 340 420)">
+        <rect x="180" y="120" width="300" height="600" rx="14" fill="#FBF4E8" />
+        <line
+          data-print
+          x1="220"
+          y1="180"
+          x2="360"
+          y2="180"
+          stroke="#1A1310"
+          strokeOpacity="0.5"
+          strokeWidth="4"
+          strokeLinecap="round"
+          pathLength={1}
+        />
+        <line
+          data-print
+          x1="220"
+          y1="210"
+          x2="300"
+          y2="210"
+          stroke="#1A1310"
+          strokeOpacity="0.3"
+          strokeWidth="3"
+          strokeLinecap="round"
+          pathLength={1}
+        />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <line
+            key={i}
+            data-print
+            x1="220"
+            y1={270 + i * 40}
+            x2={i % 2 === 0 ? 440 : 380}
+            y2={270 + i * 40}
+            stroke="#1A1310"
+            strokeOpacity="0.18"
+            strokeWidth="3"
+            strokeLinecap="round"
+            pathLength={1}
+          />
+        ))}
+
+        <g data-icone transform="translate(220 500)">
+          <rect x="2" y="16" width="42" height="26" rx="5" fill="none" stroke="#E2572B" strokeWidth="3" />
+          <line x1="2" y1="22" x2="44" y2="22" stroke="#E2572B" strokeWidth="3" />
+          <path d="M15 16 q4 -10 8 0" fill="none" stroke="#E2572B" strokeWidth="2" strokeLinecap="round" />
+          <path d="M27 16 q4 -10 8 0" fill="none" stroke="#E2572B" strokeWidth="2" strokeLinecap="round" />
+        </g>
+        <g data-icone transform="translate(290 500)">
+          <path d="M0 20 a23 14 0 0 1 46 0 z" fill="none" stroke="#E2572B" strokeWidth="3" />
+          <line x1="2" y1="26" x2="44" y2="26" stroke="#E2572B" strokeWidth="3" />
+          <path d="M0 34 a23 10 0 0 0 46 0" fill="none" stroke="#E2572B" strokeWidth="3" />
+        </g>
+        <g data-icone transform="translate(360 500)">
+          <path d="M4 6 h30 l-4 40 h-22 z" fill="none" stroke="#E2572B" strokeWidth="3" />
+          <line x1="19" y1="0" x2="19" y2="6" stroke="#E2572B" strokeWidth="3" />
+        </g>
+      </g>
+
+      <path
+        data-conector
+        d="M460 380 C 510 360, 540 320, 560 260"
         fill="none"
         stroke="#FBF4E8"
-        strokeOpacity="0.12"
-        strokeWidth="1.5"
-        transform="rotate(-6 230 480)"
+        strokeOpacity="0.5"
+        strokeWidth="3"
+        strokeDasharray="2 10"
+        strokeLinecap="round"
       />
-      {Array.from({ length: 7 }).map((_, i) => (
-        <line
-          key={i}
-          x1="100"
-          y1={220 + i * 60}
-          x2="360"
-          y2={220 + i * 60}
+
+      <g data-selo transform="translate(560 220)">
+        <circle r="46" fill="#E2572B" />
+        <path
+          d="M-16 4 a16 16 0 1 1 8 14 l-10 3 z"
+          fill="none"
           stroke="#FBF4E8"
-          strokeOpacity="0.1"
-          strokeWidth="1.5"
-          transform="rotate(-6 230 480)"
+          strokeWidth="3"
+          strokeLinejoin="round"
         />
-      ))}
+        <path d="M-16 20 l7 12 16 -20" fill="none" stroke="#FBF4E8" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
     </svg>
   )
 }
