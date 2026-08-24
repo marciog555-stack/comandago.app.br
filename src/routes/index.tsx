@@ -9,6 +9,7 @@ import { produtoRepository } from '#/infrastructure/supabase/produto-repository'
 import { obterSessaoPainelFn } from '#/infrastructure/supabase/sessao-painel'
 import type { SessaoPainel } from '#/infrastructure/supabase/sessao-painel'
 import { CardapioPublico } from '#/presentation/components/cardapio/cardapio-publico'
+import { ComandaGoLanding } from '#/presentation/components/landing/comandago-landing'
 import { LoginForm } from '#/presentation/components/painel/login-form'
 import { PainelLayout } from '#/presentation/components/painel/painel-layout'
 import { gerarJsonLdRestaurante } from '#/presentation/seo/json-ld-restaurante'
@@ -37,6 +38,19 @@ export const Route = createFileRoute('/')({
     const { hostContext, categorias } = match.loaderData ?? {
       hostContext: { modo: 'landing' } as ContextoHost,
       categorias: [] as Array<CategoriaComProdutos>,
+    }
+
+    if (hostContext.modo === 'landing') {
+      return {
+        meta: [
+          { title: 'ComandaGO — Site de pedidos pra restaurantes de Anápolis-GO' },
+          {
+            name: 'description',
+            content:
+              'Site próprio de pedidos com pedido direto no WhatsApp, sem comissão por venda. Feito pra restaurantes pequenos de Anápolis-GO.',
+          },
+        ],
+      }
     }
 
     if (hostContext.modo !== 'loja' && hostContext.modo !== 'dominio_custom') {
@@ -86,10 +100,13 @@ function Home() {
     return sessao ? <PainelHome sessao={sessao} /> : <LoginForm />
   }
 
+  if (hostContext.modo === 'landing') {
+    return <ComandaGoLanding />
+  }
+
   return (
     <div className="p-8">
       <h1 className="text-4xl font-bold">ComandaGO</h1>
-      <p className="mt-4 text-lg">Fundação em construção — sem UI ainda.</p>
       <p className="mt-2 text-sm text-neutral-500">{descreverModo(hostContext)}</p>
     </div>
   )
@@ -108,8 +125,6 @@ function PainelHome({ sessao }: { sessao: SessaoPainel }) {
 
 function descreverModo(hostContext: ContextoHost): string {
   switch (hostContext.modo) {
-    case 'landing':
-      return 'Host resolvido: landing de vendas.'
     case 'loja_nao_encontrada':
       return 'Host resolvido: subdomínio sem loja correspondente.'
     case 'nao_encontrado':
