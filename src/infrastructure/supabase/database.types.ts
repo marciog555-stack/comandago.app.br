@@ -282,6 +282,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consultar_pontos_fidelidade: {
+        Args: { p_telefone: string; p_tenant_id: string }
+        Returns: {
+          nome: string
+          pontos: number
+          telefone: string
+          ultimo_pedido: string
+        }[]
+      }
       is_tenant_member: { Args: { p_tenant_id: string }; Returns: boolean }
       is_tenant_owner: { Args: { p_tenant_id: string }; Returns: boolean }
       tenant_esta_ativo: { Args: { p_tenant_id: string }; Returns: boolean }

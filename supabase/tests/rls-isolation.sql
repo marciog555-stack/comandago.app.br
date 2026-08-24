@@ -187,7 +187,33 @@ values ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'Cliente Anônimo', '55629333333
 rollback;
 
 -- ---------------------------------------------------------------------------
--- 5. Limpeza dos fixtures.
+-- 5. Consulta pública de pontos de fidelidade (consultar_pontos_fidelidade).
+--    Só resolve o telefone exato passado, nunca lista clientes do tenant, e
+--    não vaza cross-tenant mesmo sabendo o telefone certo do outro tenant.
+-- ---------------------------------------------------------------------------
+begin;
+set local role anon;
+reset request.jwt.claims;
+
+select 'telefone_correto — deve ser 1' as cenario, count(*) as linhas
+from public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '5562911111111')
+
+union all
+select 'telefone_errado — deve ser 0', count(*)
+from public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '0000000000000')
+
+union all
+select 'telefone_do_tenant_b_com_tenant_a — deve ser 0', count(*)
+from public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '5562922222222')
+
+union all
+select 'tabela_base_direta_anon — deve ser 0', count(*)
+from public.fidelidade_clientes;
+
+rollback;
+
+-- ---------------------------------------------------------------------------
+-- 6. Limpeza dos fixtures.
 -- ---------------------------------------------------------------------------
 delete from public.tenants where slug in ('padaria-teste-a', 'padaria-teste-b', 'padaria-teste-inativa');
 delete from auth.users where id in ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222');
