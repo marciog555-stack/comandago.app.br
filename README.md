@@ -38,6 +38,30 @@ Para reproduzir o teste de isolamento entre tenants, rode
 SQL Editor do Supabase (ou via `psql`) contra um projeto onde a migration já
 foi aplicada.
 
+## Middleware de hostname
+
+`src/start.ts` registra `hostnameMiddleware`
+([`src/infrastructure/hostname/hostname-middleware.ts`](./src/infrastructure/hostname/hostname-middleware.ts))
+como request middleware global do TanStack Start. Em toda requisição, ele lê
+o header `Host`, classifica o host (`src/domain/tenant/resolver-hostname.ts`)
+e resolve o tenant correspondente via `tenants_publico()`
+(`src/application/tenant/resolver-contexto-host.ts` +
+`src/infrastructure/supabase/tenant-repository.ts`):
+
+| Host | Modo resolvido |
+|---|---|
+| `comandago.app.br` (ou `COMANDAGO_APEX_DOMAIN`) | `landing` |
+| `app.<apex>` | `painel` |
+| `{slug}.<apex>` | `loja` (ou `loja_nao_encontrada` se o slug não existir/for reservado) |
+| qualquer outro host | tenta casar com `tenants.custom_domain`; `dominio_custom` ou `nao_encontrado` |
+
+`localhost` e `*.vercel.app` caem direto em `landing` (sem round-trip no
+Supabase) — ainda não há domínio real apontado. O resultado fica disponível
+em `Route.useRouteContext().hostContext` em qualquer rota, via
+`beforeLoad` da rota raiz (`src/routes/__root.tsx`). `src/routes/index.tsx`
+só imprime qual modo foi resolvido — as telas de verdade (landing, painel,
+cardápio) ainda não existem.
+
 # Getting Started
 
 To run this application:
