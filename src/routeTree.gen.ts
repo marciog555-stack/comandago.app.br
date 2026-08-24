@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AparenciaRouteImport } from './routes/aparencia'
 import { Route as CategoriasRouteImport } from './routes/categorias'
+import { Route as FidelidadeRouteImport } from './routes/fidelidade'
 import { Route as HorariosRouteImport } from './routes/horarios'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
@@ -30,6 +31,11 @@ const AparenciaRoute = AparenciaRouteImport.update({
 const CategoriasRoute = CategoriasRouteImport.update({
   id: '/categorias',
   path: '/categorias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FidelidadeRoute = FidelidadeRouteImport.update({
+  id: '/fidelidade',
+  path: '/fidelidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HorariosRoute = HorariosRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aparencia': typeof AparenciaRoute
   '/categorias': typeof CategoriasRoute
+  '/fidelidade': typeof FidelidadeRoute
   '/horarios': typeof HorariosRoute
   '/produtos': typeof ProdutosRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aparencia': typeof AparenciaRoute
   '/categorias': typeof CategoriasRoute
+  '/fidelidade': typeof FidelidadeRoute
   '/horarios': typeof HorariosRoute
   '/produtos': typeof ProdutosRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/aparencia': typeof AparenciaRoute
   '/categorias': typeof CategoriasRoute
+  '/fidelidade': typeof FidelidadeRoute
   '/horarios': typeof HorariosRoute
   '/produtos': typeof ProdutosRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aparencia'
     | '/categorias'
+    | '/fidelidade'
     | '/horarios'
     | '/produtos'
     | '/robots.txt'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aparencia'
     | '/categorias'
+    | '/fidelidade'
     | '/horarios'
     | '/produtos'
     | '/robots.txt'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aparencia'
     | '/categorias'
+    | '/fidelidade'
     | '/horarios'
     | '/produtos'
     | '/robots.txt'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AparenciaRoute: typeof AparenciaRoute
   CategoriasRoute: typeof CategoriasRoute
+  FidelidadeRoute: typeof FidelidadeRoute
   HorariosRoute: typeof HorariosRoute
   ProdutosRoute: typeof ProdutosRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/categorias'
       fullPath: '/categorias'
       preLoaderRoute: typeof CategoriasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fidelidade': {
+      id: '/fidelidade'
+      path: '/fidelidade'
+      fullPath: '/fidelidade'
+      preLoaderRoute: typeof FidelidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/horarios': {
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AparenciaRoute: AparenciaRoute,
   CategoriasRoute: CategoriasRoute,
+  FidelidadeRoute: FidelidadeRoute,
   HorariosRoute: HorariosRoute,
   ProdutosRoute: ProdutosRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

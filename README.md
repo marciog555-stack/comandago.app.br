@@ -173,6 +173,34 @@ produto/logo sobem pro bucket público `lojas` (migration
 sob `{tenant_id}/...` — a policy de Storage usa esse primeiro segmento do
 path com `is_tenant_member()`, mesmo padrão das tabelas.
 
+## Fidelidade automática
+
+Briefing seção 6, item 4 ("pontos por telefone, consulta sem senha").
+
+**Pontuação:** 1 ponto por pedido criado (não por valor gasto — regra não
+especificada no briefing, decisão explícita, fácil de trocar). Creditado
+dentro da própria function `criar_pedido`
+([`20260824150000_fidelidade_automatica.sql`](./supabase/migrations/20260824150000_fidelidade_automatica.sql)):
+upsert em `fidelidade_clientes` na mesma transação do pedido — "automático"
+significa que não depende de nenhuma ação do lojista.
+
+**Bug real encontrado testando:** o mesmo cliente digitando o telefone às
+vezes com "+55" e às vezes sem virava dois registros diferentes
+(`"62999991234"` vs `"5562999991234"`) — cada pedido creditando um
+"cliente" diferente, quebrando o programa de pontos. Corrigido em
+[`20260824160000_normalizar_telefone_ddi.sql`](./supabase/migrations/20260824160000_normalizar_telefone_ddi.sql)
+com `normalizar_telefone()`, uma function compartilhada (só dígitos + remove
+DDI 55 quando reconhecível) usada tanto por `criar_pedido` quanto por
+`consultar_pontos_fidelidade` — as duas nunca mais podem divergir na forma
+de normalizar, porque é a mesma function.
+
+**Consulta pública:** `/fidelidade` (`src/routes/fidelidade.tsx`, só
+renderiza para `hostContext.modo` `loja`/`dominio_custom`) — cliente digita
+o telefone, sem login, e vê os pontos via RPC `consultar_pontos_fidelidade`
+(`src/infrastructure/supabase/fidelidade-consulta-repository.ts`, client
+anônimo, mesmo padrão do cardápio público). Link "Consultar meus pontos de
+fidelidade" no cabeçalho da loja (`loja-header.tsx`).
+
 # Getting Started
 
 To run this application:

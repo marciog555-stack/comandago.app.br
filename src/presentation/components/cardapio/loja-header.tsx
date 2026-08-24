@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+
 import type { TenantPublico } from '#/domain/tenant/tenant'
 import type { StatusLoja } from '#/domain/tenant/status-loja'
 
@@ -46,6 +48,9 @@ export function LojaHeader({ tenant, status }: LojaHeaderProps) {
             </span>
           </p>
           {tenant.endereco ? <p className="mt-1 truncate text-sm text-neutral-600">{tenant.endereco}</p> : null}
+          <Link to="/fidelidade" className="mt-1 inline-block text-sm text-[var(--cor-primaria)] underline">
+            Consultar meus pontos de fidelidade
+          </Link>
         </div>
       </div>
     </header>
