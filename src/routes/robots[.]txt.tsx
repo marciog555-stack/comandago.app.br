@@ -7,7 +7,7 @@ export const Route = createFileRoute('/robots.txt')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const hostContext = await resolverHostContextoDeHeader(request.headers.get('host') ?? '')
+        const hostContext = await resolverHostContextoDeHeader(request.headers.get('host') ?? '', request.url)
 
         return new Response(gerarRobotsTxt(hostContext, new URL(request.url).origin), {
           headers: { 'content-type': 'text/plain; charset=utf-8' },

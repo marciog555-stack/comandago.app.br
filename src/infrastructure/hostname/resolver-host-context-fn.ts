@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeader } from '@tanstack/react-start/server'
+import { getRequestHeader, getRequestUrl } from '@tanstack/react-start/server'
 
 import { resolverHostContextoDeHeader } from '#/infrastructure/hostname/resolver-host-context'
 
@@ -12,5 +12,5 @@ import { resolverHostContextoDeHeader } from '#/infrastructure/hostname/resolver
  */
 export const resolverHostContextoFn = createServerFn({ method: 'GET' }).handler(async () => {
   const hostHeader = getRequestHeader('host') ?? ''
-  return resolverHostContextoDeHeader(hostHeader)
+  return resolverHostContextoDeHeader(hostHeader, getRequestUrl())
 })

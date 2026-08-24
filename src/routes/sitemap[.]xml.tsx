@@ -6,7 +6,7 @@ export const Route = createFileRoute('/sitemap.xml')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const hostContext = await resolverHostContextoDeHeader(request.headers.get('host') ?? '')
+        const hostContext = await resolverHostContextoDeHeader(request.headers.get('host') ?? '', request.url)
 
         // Só a loja pública tem sitemap — cardápio ainda é uma página única
         // (categorias/produtos não têm URL própria nesta sessão), então o

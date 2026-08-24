@@ -60,6 +60,15 @@ Supabase) — ainda não há domínio real apontado. O resultado fica disponíve
 em `Route.useRouteContext().hostContext` em qualquer rota, via
 `beforeLoad` da rota raiz (`src/routes/__root.tsx`).
 
+**Preview sem domínio próprio:** em `*.vercel.app` não existe subdomínio de
+verdade (não dá pra apontar `loja.comandagoappbr.vercel.app` sem ser dono
+do domínio) — então nesses hosts (e em `localhost`), `?loja=<slug>` e
+`?painel=1` na URL forçam o modo correspondente
+(`src/infrastructure/hostname/resolver-host-context.ts`), só pra dar pra
+demonstrar loja/painel antes do domínio estar no ar. Nunca interfere em
+host real. Loja de demonstração: `?loja=demo` (dados fictícios, seedados
+direto no banco — não faz parte de nenhuma migration).
+
 ## Cardápio público (SSR)
 
 Quando `hostContext.modo` é `loja` ou `dominio_custom`, `src/routes/index.tsx`
