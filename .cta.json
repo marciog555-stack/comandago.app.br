@@ -12,8 +12,10 @@
   "includeExamples": false,
   "routerOnly": false,
   "version": 1,
+  "addOns": true,
   "framework": "react",
   "chosenAddOns": [
-    "shadcn"
+    "shadcn",
+    "nitro"
   ]
 }
