@@ -188,26 +188,36 @@ rollback;
 
 -- ---------------------------------------------------------------------------
 -- 5. Consulta pública de pontos de fidelidade (consultar_pontos_fidelidade).
---    Só resolve o telefone exato passado, nunca lista clientes do tenant, e
---    não vaza cross-tenant mesmo sabendo o telefone certo do outro tenant.
+--    Retorna um integer (não uma linha): pontos reais, 0 ("não encontrado"
+--    e "cliente com 0 pontos" são indistinguíveis de propósito) ou null
+--    (tenant inativo ou telefone em formato inválido). Não lista clientes
+--    do tenant, e não vaza cross-tenant mesmo sabendo o telefone certo do
+--    outro tenant.
 -- ---------------------------------------------------------------------------
 begin;
 set local role anon;
 reset request.jwt.claims;
 
-select 'telefone_correto — deve ser 1' as cenario, count(*) as linhas
-from public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '5562911111111')
+select 'telefone_correto — deve ser 10' as cenario,
+       public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '5562911111111') as pontos
 
 union all
-select 'telefone_errado — deve ser 0', count(*)
-from public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '0000000000000')
+select 'telefone_inexistente — deve ser 0',
+       public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '5562900000000')
 
 union all
-select 'telefone_do_tenant_b_com_tenant_a — deve ser 0', count(*)
-from public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '5562922222222')
+select 'telefone_do_tenant_b_com_tenant_a — deve ser 0',
+       public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '5562922222222')
 
 union all
-select 'tabela_base_direta_anon — deve ser 0', count(*)
+select 'tenant_inativo — deve ser null',
+       public.consultar_pontos_fidelidade('cccccccc-cccc-cccc-cccc-cccccccccccc', '5562911111111')
+
+union all
+select 'telefone_invalido_curto — deve ser null',
+       public.consultar_pontos_fidelidade('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '123');
+
+select 'tabela_base_direta_anon — deve ser 0' as cenario, count(*) as linhas
 from public.fidelidade_clientes;
 
 rollback;
