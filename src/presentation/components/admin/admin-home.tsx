@@ -1,9 +1,14 @@
 import { useState } from 'react'
 
-import { validarNovaLoja } from '#/domain/tenant/provisionar-loja'
-import type { DadosNovaLoja } from '#/domain/tenant/provisionar-loja'
+import { validarDadosLoja, validarNovaLoja } from '#/domain/tenant/provisionar-loja'
+import type { DadosLoja, DadosNovaLoja } from '#/domain/tenant/provisionar-loja'
 import { gerarUrlLoja } from '#/domain/tenant/provisionar-loja'
-import { listarLojasAdminFn, provisionarLojaFn } from '#/infrastructure/supabase/admin-actions'
+import {
+  alternarAtivoLojaAdminFn,
+  atualizarLojaAdminFn,
+  listarLojasAdminFn,
+  provisionarLojaFn,
+} from '#/infrastructure/supabase/admin-actions'
 import type { LojaAdmin } from '#/infrastructure/supabase/admin-actions'
 
 // Só um texto informativo (preview de URL) — o roteamento de verdade sempre
@@ -46,25 +51,135 @@ export function AdminHome({ lojasIniciais }: AdminHomeProps) {
       <h2 className="mt-10 text-lg font-semibold">Lojas cadastradas ({lojas.length})</h2>
       <ul className="mt-4 divide-y divide-black/10 rounded-lg border border-black/10 bg-white">
         {lojas.map((loja) => (
-          <li key={loja.id} className="flex items-center justify-between gap-3 px-4 py-3">
-            <div>
-              <p className="font-medium">{loja.nome}</p>
-              <p className="text-sm text-neutral-500">
-                {loja.slug}.{APEX_DOMAIN_EXIBICAO} — {loja.cidade}
-              </p>
-            </div>
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                loja.ativo ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'
-              }`}
-            >
-              {loja.ativo ? 'Ativa' : 'Inativa'}
-            </span>
-          </li>
+          <LinhaLoja
+            key={loja.id}
+            loja={loja}
+            onAtualizada={(atualizada) => {
+              setLojas((atual) => atual.map((l) => (l.id === atualizada.id ? atualizada : l)))
+            }}
+          />
         ))}
         {lojas.length === 0 ? <li className="px-4 py-6 text-sm text-neutral-500">Nenhuma loja ainda.</li> : null}
       </ul>
     </div>
+  )
+}
+
+function LinhaLoja({ loja, onAtualizada }: { loja: LojaAdmin; onAtualizada: (loja: LojaAdmin) => void }) {
+  const [editando, setEditando] = useState(false)
+  const [dados, setDados] = useState<DadosLoja>({
+    nome: loja.nome,
+    slug: loja.slug,
+    cidade: loja.cidade,
+    whatsapp: loja.whatsapp,
+  })
+  const [erro, setErro] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+
+  async function handleSalvar() {
+    setErro(null)
+    const erroValidacao = validarDadosLoja(dados)
+    if (erroValidacao) {
+      setErro(erroValidacao)
+      return
+    }
+    setEnviando(true)
+    try {
+      const resultado = await atualizarLojaAdminFn({ data: { tenantId: loja.id, ...dados } })
+      if (!resultado.sucesso) {
+        setErro(resultado.erro)
+        return
+      }
+      onAtualizada({
+        ...loja,
+        nome: dados.nome.trim(),
+        slug: dados.slug.trim().toLowerCase(),
+        cidade: dados.cidade.trim(),
+        whatsapp: dados.whatsapp.trim(),
+      })
+      setEditando(false)
+    } catch {
+      setErro('Não foi possível salvar. Tente de novo.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  async function handleAlternarAtivo() {
+    const novoAtivo = !loja.ativo
+    try {
+      const resultado = await alternarAtivoLojaAdminFn({ data: { tenantId: loja.id, ativo: novoAtivo } })
+      if (resultado.sucesso) onAtualizada({ ...loja, ativo: novoAtivo })
+    } catch {
+      // silencioso — a lista recarrega o estado real da próxima vez que a página abrir.
+    }
+  }
+
+  if (editando) {
+    return (
+      <li className="px-4 py-3">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <input
+            value={dados.nome}
+            onChange={(e) => setDados((d) => ({ ...d, nome: e.target.value }))}
+            placeholder="Nome"
+            className="rounded-lg border border-black/20 px-2 py-1"
+          />
+          <input
+            value={dados.slug}
+            onChange={(e) => setDados((d) => ({ ...d, slug: e.target.value.toLowerCase() }))}
+            placeholder="Subdomínio"
+            className="rounded-lg border border-black/20 px-2 py-1"
+          />
+          <input
+            value={dados.cidade}
+            onChange={(e) => setDados((d) => ({ ...d, cidade: e.target.value }))}
+            placeholder="Cidade"
+            className="rounded-lg border border-black/20 px-2 py-1"
+          />
+          <input
+            value={dados.whatsapp}
+            onChange={(e) => setDados((d) => ({ ...d, whatsapp: e.target.value }))}
+            placeholder="WhatsApp"
+            className="rounded-lg border border-black/20 px-2 py-1"
+          />
+        </div>
+        {erro ? <p className="mt-2 text-sm text-red-700">{erro}</p> : null}
+        <div className="mt-2 flex gap-3">
+          <button type="button" disabled={enviando} onClick={handleSalvar} className="text-sm font-medium text-emerald-700">
+            {enviando ? 'Salvando…' : 'Salvar'}
+          </button>
+          <button type="button" onClick={() => setEditando(false)} className="text-sm text-neutral-500">
+            Cancelar
+          </button>
+        </div>
+      </li>
+    )
+  }
+
+  return (
+    <li className="flex items-center justify-between gap-3 px-4 py-3">
+      <div>
+        <p className="font-medium">{loja.nome}</p>
+        <p className="text-sm text-neutral-500">
+          {loja.slug}.{APEX_DOMAIN_EXIBICAO} — {loja.cidade}
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleAlternarAtivo}
+          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+            loja.ativo ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'
+          }`}
+        >
+          {loja.ativo ? 'Ativa' : 'Inativa'}
+        </button>
+        <button type="button" onClick={() => setEditando(true)} className="text-sm text-neutral-600 underline">
+          Editar
+        </button>
+      </div>
+    </li>
   )
 }
 

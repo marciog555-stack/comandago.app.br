@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { validarNovaLoja } from '#/domain/tenant/provisionar-loja'
-import type { DadosNovaLoja } from '#/domain/tenant/provisionar-loja'
+import { validarDadosLoja, validarNovaLoja } from '#/domain/tenant/provisionar-loja'
+import type { DadosEditarLoja, DadosNovaLoja } from '#/domain/tenant/provisionar-loja'
 import { criarClienteServidor } from '#/infrastructure/supabase/server-client'
 import { resolverSessaoAdminFn } from '#/infrastructure/supabase/sessao-admin'
 
@@ -10,6 +10,7 @@ export interface LojaAdmin {
   slug: string
   nome: string
   cidade: string
+  whatsapp: string
   ativo: boolean
   criadoEm: string
 }
@@ -33,7 +34,7 @@ export const listarLojasAdminFn = createServerFn({ method: 'GET' }).handler(
 
     const { data, error } = await supabase
       .from('tenants')
-      .select('id, slug, nome, cidade, ativo, criado_em')
+      .select('id, slug, nome, cidade, whatsapp, ativo, criado_em')
       .order('criado_em', { ascending: false })
     if (error) throw error
 
@@ -42,6 +43,7 @@ export const listarLojasAdminFn = createServerFn({ method: 'GET' }).handler(
       slug: linha.slug,
       nome: linha.nome,
       cidade: linha.cidade,
+      whatsapp: linha.whatsapp ?? '',
       ativo: linha.ativo,
       criadoEm: linha.criado_em,
     }))
@@ -116,4 +118,66 @@ export const provisionarLojaFn = createServerFn({ method: 'POST' })
     }
 
     return { sucesso: true, tenantId: tenantCriado.id, slug }
+  })
+
+export type ResultadoEditarLoja = { sucesso: true } | { sucesso: false; erro: string }
+
+/**
+ * Edita os dados básicos de uma loja já existente — nome, subdomínio,
+ * cidade e WhatsApp. Não mexe no login do dono (troca de e-mail é um fluxo
+ * de auth à parte, fora do escopo aqui). Mesmo motivo de usar service_role
+ * das outras functions deste arquivo: sem policy pública de UPDATE em
+ * tenants por slug/nome/etc pro admin da plataforma (só o próprio owner via
+ * `tenants_update_owner`, e mesmo assim não pelo painel do lojista hoje).
+ */
+export const atualizarLojaAdminFn = createServerFn({ method: 'POST' })
+  .validator((dados: DadosEditarLoja) => dados)
+  .handler(async ({ data }): Promise<ResultadoEditarLoja> => {
+    await exigirAdminServidor()
+
+    const erroValidacao = validarDadosLoja(data)
+    if (erroValidacao) {
+      return { sucesso: false, erro: erroValidacao }
+    }
+
+    const supabase = criarClienteServidor()
+    const { error } = await supabase
+      .from('tenants')
+      .update({
+        nome: data.nome.trim(),
+        slug: data.slug.trim().toLowerCase(),
+        cidade: data.cidade.trim(),
+        whatsapp: data.whatsapp.trim(),
+      })
+      .eq('id', data.tenantId)
+
+    if (error) {
+      const slugDuplicado = error.code === '23505'
+      return {
+        sucesso: false,
+        erro: slugDuplicado ? `O subdomínio "${data.slug}" já está em uso.` : 'Não foi possível salvar a loja.',
+      }
+    }
+
+    return { sucesso: true }
+  })
+
+/**
+ * Ativa/desativa uma loja (ex: cliente parou de pagar) — `ativo` já é o
+ * campo que a RLS pública de categorias/produtos/pedidos usa pra decidir se
+ * o cardápio fica visível (`tenant_esta_ativo`), então isso já "desliga" a
+ * loja pro público sem precisar apagar nada.
+ */
+export const alternarAtivoLojaAdminFn = createServerFn({ method: 'POST' })
+  .validator((dados: { tenantId: string; ativo: boolean }) => dados)
+  .handler(async ({ data }): Promise<ResultadoEditarLoja> => {
+    await exigirAdminServidor()
+
+    const supabase = criarClienteServidor()
+    const { error } = await supabase.from('tenants').update({ ativo: data.ativo }).eq('id', data.tenantId)
+    if (error) {
+      return { sucesso: false, erro: 'Não foi possível atualizar o status da loja.' }
+    }
+
+    return { sucesso: true }
   })
