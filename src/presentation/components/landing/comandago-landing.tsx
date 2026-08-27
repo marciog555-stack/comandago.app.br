@@ -8,6 +8,14 @@ if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
 }
 
+// WhatsApp do próprio Márcio (vendas) — não confundir com o whatsapp de uma
+// loja tenant (esse é fixo, é o contato da plataforma, não de um cliente).
+const WHATSAPP_VENDAS = '5562995471262'
+
+function linkWhatsappVendas(mensagem: string): string {
+  return `https://wa.me/${WHATSAPP_VENDAS}?text=${encodeURIComponent(mensagem)}`
+}
+
 /**
  * Landing de vendas da própria plataforma (não confundir com o cardápio de
  * uma loja) — mostrada em hostContext.modo === 'landing'. Paleta e
@@ -121,7 +129,9 @@ export function ComandaGoLanding() {
           Comanda<span className="text-[#E2572B]">GO</span>
         </p>
         <a
-          href="#precos"
+          href={linkWhatsappVendas('Oi! Quero saber mais sobre o ComandaGO pra minha loja.')}
+          target="_blank"
+          rel="noreferrer"
           className="rounded-full border border-[#1A1310]/15 px-4 py-1.5 text-sm font-medium text-[#1A1310] no-underline transition hover:border-[#1A1310]/30 active:scale-95"
         >
           Quero minha loja
@@ -152,7 +162,9 @@ export function ComandaGoLanding() {
               <div data-hero-cta className="mt-9 flex flex-wrap items-center gap-4">
                 <a
                   ref={ctaRef}
-                  href="#precos"
+                  href={linkWhatsappVendas('Oi! Quero saber mais sobre o ComandaGO pra minha loja.')}
+                  target="_blank"
+                  rel="noreferrer"
                   className="inline-block rounded-full bg-[#E2572B] px-7 py-3 font-semibold text-white no-underline transition-colors hover:bg-[#c94a22] active:scale-95"
                 >
                   Quero minha loja
@@ -166,9 +178,37 @@ export function ComandaGoLanding() {
 
       <section data-reveal className="border-y border-[#1A1310]/10 bg-[#F2E7D4]">
         <div className="mx-auto max-w-3xl px-6 py-16 text-center">
-          <p className="display-title text-2xl leading-snug font-medium italic sm:text-3xl">
-            "O iFood traz cliente novo. O ComandaGO atende quem já é seu — e quem voltou não precisa custar 25%."
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#E2572B]">Por que o ComandaGO existe</p>
+          <p className="display-title mt-4 text-2xl leading-snug font-medium sm:text-3xl">
+            O iFood traz cliente novo. O ComandaGO atende quem já é seu — e quem voltou não precisa custar 25% de
+            comissão.
           </p>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-6 py-20">
+        <div className="grid gap-10 sm:grid-cols-2 sm:items-center">
+          <div>
+            <h2 data-reveal className="display-title text-3xl font-semibold">
+              Apareça pra quem já está procurando
+            </h2>
+            <p data-reveal className="mt-4 text-[#1A1310]/70">
+              "Marmita delivery Anápolis", "hambúrguer perto de mim" — todo dia tem gente pesquisando isso no Google.
+              Hoje, sem site próprio, essa busca inteira vai pro iFood. Seu ComandaGO é indexado desde o primeiro
+              dia: pedido novo sem gastar em anúncio.
+            </p>
+          </div>
+          <div
+            data-reveal
+            className="rounded-2xl border border-[#1A1310]/10 bg-[#F2E7D4] p-6 text-sm text-[#1A1310]/70"
+          >
+            <p className="font-semibold text-[#1A1310]">O que já vem pronto pra isso</p>
+            <ul className="mt-3 space-y-2">
+              <li>· Página carregada pronta pro Google (sem "carregando..." antes do conteúdo aparecer)</li>
+              <li>· Nome da loja e cidade no título de cada página</li>
+              <li>· Ficha de restaurante que o Google entende (endereço, cardápio, horário)</li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -196,6 +236,36 @@ export function ComandaGoLanding() {
         </div>
       </section>
 
+      <section className="border-y border-[#1A1310]/10 bg-[#F2E7D4]">
+        <div className="mx-auto max-w-5xl px-6 py-20">
+          <h2 data-reveal className="display-title text-3xl font-semibold">
+            Como funciona
+          </h2>
+          <div className="mt-10 grid gap-8 sm:grid-cols-4">
+            <Etapa
+              numero="1"
+              titulo="Você me chama"
+              descricao="Manda o WhatsApp e a gente combina um horário — o cadastro é presencial, aqui em Anápolis."
+            />
+            <Etapa
+              numero="2"
+              titulo="Eu vou até a loja"
+              descricao="Cadastro o cardápio, tiro as fotos e configuro cores e logo — você não precisa digitar nada."
+            />
+            <Etapa
+              numero="3"
+              titulo="Site no ar"
+              descricao="Sua loja fica no seu próprio endereço (subdomínio.comandago.app.br), pronta pra receber pedido."
+            />
+            <Etapa
+              numero="4"
+              titulo="Pedido no WhatsApp"
+              descricao="Cliente monta o pedido no site, a mensagem chega pronta no seu WhatsApp. Você só confirma."
+            />
+          </div>
+        </div>
+      </section>
+
       <section id="precos" className="bg-[#1A1310] text-[#FBF4E8]">
         <div className="mx-auto max-w-5xl px-6 py-20">
           <h2 data-reveal className="display-title text-3xl font-semibold">
@@ -213,11 +283,44 @@ export function ComandaGoLanding() {
               R$ 50<span className="text-lg font-normal text-[#FBF4E8]/60">/mês</span>
             </p>
             <p className="mt-4 text-sm text-[#FBF4E8]/70">Sem multa de cancelamento. Sem taxa por pedido.</p>
+            <a
+              href={linkWhatsappVendas('Oi! Vi o preço do ComandaGO (R$ 100 + R$ 50/mês) e quero começar.')}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-6 inline-block rounded-full bg-[#E2572B] px-6 py-3 text-center font-semibold text-white no-underline transition-colors hover:bg-[#c94a22] active:scale-95"
+            >
+              Falar no WhatsApp
+            </a>
           </div>
           <p data-reveal className="mt-8 text-sm text-[#FBF4E8]/60">
             Atendimento presencial em Anápolis-GO — a implantação é feita junto com você, do cadastro do cardápio às
             fotos.
           </p>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-3xl px-6 py-20">
+        <h2 data-reveal className="display-title text-3xl font-semibold">
+          Perguntas frequentes
+        </h2>
+        <div className="mt-8 divide-y divide-[#1A1310]/10">
+          <Pergunta pergunta="Preciso saber mexer em computador?">
+            Não. O painel foi feito pra funcionar do celular — cadastrar prato, trocar foto ou mudar preço não exige
+            curso nem ajuda de TI.
+          </Pergunta>
+          <Pergunta pergunta="Isso substitui o iFood?">
+            Não, e não é pra substituir. O iFood continua trazendo cliente novo. O ComandaGO é o canal pra quem já
+            conhece sua loja pedir direto com você, sem comissão.
+          </Pergunta>
+          <Pergunta pergunta="Tem taxa por pedido ou comissão?">
+            Não. Só R$ 100 de implantação e R$ 50 fixos por mês, venda o quanto vender.
+          </Pergunta>
+          <Pergunta pergunta="E se eu quiser cancelar?">
+            Cancela quando quiser, sem multa e sem fidelidade.
+          </Pergunta>
+          <Pergunta pergunta="Minha loja não tem fotos boas do cardápio, tem problema?">
+            Não — as fotos são tiradas no dia do cadastro presencial, junto com você.
+          </Pergunta>
         </div>
       </section>
 
@@ -234,6 +337,28 @@ function Recurso({ titulo, descricao }: { titulo: string; descricao: string }) {
       <p className="font-semibold text-[#1A1310]">{titulo}</p>
       <p className="mt-2 text-sm text-[#1A1310]/70">{descricao}</p>
     </div>
+  )
+}
+
+function Etapa({ numero, titulo, descricao }: { numero: string; titulo: string; descricao: string }) {
+  return (
+    <div data-reveal-item>
+      <p className="display-title text-3xl font-semibold text-[#E2572B]">{numero}</p>
+      <p className="mt-2 font-semibold text-[#1A1310]">{titulo}</p>
+      <p className="mt-2 text-sm text-[#1A1310]/70">{descricao}</p>
+    </div>
+  )
+}
+
+function Pergunta({ pergunta, children }: { pergunta: string; children: React.ReactNode }) {
+  return (
+    <details data-reveal-item className="group py-4">
+      <summary className="flex cursor-pointer list-none items-center justify-between font-medium text-[#1A1310] marker:content-none">
+        {pergunta}
+        <span className="ml-4 text-[#E2572B] transition-transform group-open:rotate-45">+</span>
+      </summary>
+      <p className="mt-3 text-sm text-[#1A1310]/70">{children}</p>
+    </details>
   )
 }
 
