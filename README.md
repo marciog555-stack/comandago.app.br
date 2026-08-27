@@ -210,6 +210,31 @@ o telefone, sem login, e vê os pontos via RPC `consultar_pontos_fidelidade`
 anônimo, mesmo padrão do cardápio público). Link "Consultar meus pontos de
 fidelidade" no cabeçalho da loja (`loja-header.tsx`).
 
+## Provisionamento (admin)
+
+`/admin` (`src/routes/admin.tsx`) — última peça do escopo v1 (seção 6 do
+briefing, item 5): tela onde Márcio cria uma loja nova (nome, subdomínio,
+cidade, WhatsApp) e o login do dono, numa tacada só, pro cadastro
+presencial não depender de mexer direto no banco.
+
+- **Sem role/tabela nova:** não existe conceito de "membro da plataforma"
+  no schema (`tenant_usuarios` é sobre pertencer a UM tenant). Acesso por
+  allowlist de e-mail via variável de ambiente
+  (`COMANDAGO_ADMIN_EMAILS`, `src/infrastructure/supabase/sessao-admin.ts`)
+  — proporcional a "Márcio trabalha sozinho" (seção 7). Reaproveita o mesmo
+  login/cookies do painel do lojista (`LoginForm`, `entrarFn`/`sairFn`); só
+  troca a checagem de `tenant_usuarios` pela allowlist.
+- **service_role, não RLS:** criar tenant/login/vínculo passa por
+  `criarClienteServidor()` (`src/infrastructure/supabase/server-client.ts`),
+  igual o comentário já deixado na migration inicial antecipava
+  ("provisionamento... pela futura tela de admin"). Nenhuma dessas tabelas
+  tem policy pública de INSERT — de propósito.
+- **Sem transação cross-sistema:** `auth.admin.createUser` é uma chamada
+  HTTP separada do insert em `tenants`/`tenant_usuarios`, não participam da
+  mesma transação Postgres. Se um passo falhar depois do usuário já criado,
+  o código desfaz manualmente (apaga o usuário órfão) em vez de deixar uma
+  conta de login sem loja associada.
+
 ## Landing de vendas
 
 `src/presentation/components/landing/comandago-landing.tsx`, mostrada em

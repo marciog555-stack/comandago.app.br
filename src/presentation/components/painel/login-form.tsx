@@ -3,7 +3,15 @@ import { useRouter } from '@tanstack/react-router'
 
 import { entrarFn } from '#/infrastructure/supabase/auth-actions'
 
-export function LoginForm() {
+interface LoginFormProps {
+  titulo?: string
+  subtitulo?: string
+}
+
+export function LoginForm({
+  titulo = 'ComandaGO — Painel',
+  subtitulo = 'Entre com o e-mail e senha da sua loja.',
+}: LoginFormProps = {}) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
@@ -32,8 +40,8 @@ export function LoginForm() {
 
   return (
     <div className="mx-auto mt-16 max-w-sm px-4">
-      <h1 className="text-2xl font-bold">ComandaGO — Painel</h1>
-      <p className="mt-1 text-sm text-neutral-600">Entre com o e-mail e senha da sua loja.</p>
+      <h1 className="text-2xl font-bold">{titulo}</h1>
+      <p className="mt-1 text-sm text-neutral-600">{subtitulo}</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
